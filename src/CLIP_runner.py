@@ -1,6 +1,7 @@
 from CLIP_model import ClipHandler
 from descriptor_test import LabelsWithDescriptors
 from sys import argv
+import numpy as np
 
 def get_label_descriptors():
     if len(argv) != 3:
@@ -24,22 +25,45 @@ class Experiment:
 
     def __init__(self, labelDescriptList):
         self.labelDescriptList = labelDescriptList
-        self.originalLabels = [l.labels[0] for l in labelDescriptList]
-        self.descriporLabels = [d for d in l.descriptors for l in labelDescriptList]
-        self.descripLabelMap = {d:l for d in l.descriptors for l in labelDescriptList}
+        self.originalLabels = np.array([l.labels[0] for l in labelDescriptList])
+        self.descriporLabels = np.array([ Experiment._combine_label_and_descriptor(d) for d in l.descriptors for l in labelDescriptList])
+        self.descripLabelMap = {Experiment._combine_label_and_descriptor(d):l for d in l.descriptors for l in labelDescriptList}
         self.modelHandler = ClipHandler()
 
+    @staticmethod
+    def _combine_label_and_descriptor(label: str, descriptor: str) -> str:
+        # TODO make the has/is more general maybe use a CKF parse or something along those lines?
+        return f"{label} which (has/is) {descriptor}"
 
-    #TODO Implement
-    def run_original(self) -> float:
+
+    # TODO Test & Vectorize
+    def run_original(self, X: list[str], Y: list[str]) -> float:
         self.modelHandler.setLabels(self.originalLabels)
-        return 0
+        num_correct = 0
+        for (x, y) in zip(X, Y):
+            if self.originalLabels[self.modeHandler.predict(x).argmax()] == y:
+                num_correct += 1
+
+        return float(num_correct) / float(len(image_paths))
 
 
-    #TODO Implement
-    def run_descriptor(self) -> float:
+    # TODO Test & Vectorize
+    def run_descriptor(self, X: list[str], Y: list[str]) -> float:
         self.modelHandler.setLabels(self.descriporLabels)
-        return 0
+        num_correct = 0
+
+        for (x, y) in zip(X, Y):
+            label_prob = np.zeros(len(self.originalLabels));
+            PHI = self.modelHandler.predict(x)
+            for (phi, dl) in zip(PHI, self.descriporLabels):
+                label_prob[self.descripLabelMap[dl].index] += phi
+
+            for (lp,l) in zip(label_prob,self.labelDescriptList):
+                lp /= len(l.descriptors)
+            if self.originalLabels[label_prob.argmax()] == y:
+                num_correct += 1
+
+        return num_correct
 
 
 def main():
