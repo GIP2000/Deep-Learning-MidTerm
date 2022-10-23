@@ -36,7 +36,7 @@ class ClipHandler:
 
         return probs
 
-
+# Theses are the tests
 if __name__ == "__main__":
     print("Starting")
     ch = ClipHandler()

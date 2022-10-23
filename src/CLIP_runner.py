@@ -49,7 +49,7 @@ def main():
 
     print(f"CLIP base acc: {original_acc}\nOur acc: {our_acc}")
 
-
+# This is the main program
 if __name__ == '__main__':
     main()
 

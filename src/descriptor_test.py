@@ -83,7 +83,7 @@ A: There are several useful visual features to tell there is a {category_name} i
             return d
 
 
-
+# These are the tests
 if __name__ == "__main__":
     if len(argv) != 3:
         print("Usage: python descriptor_test.py -[g|r] [file_path]")
