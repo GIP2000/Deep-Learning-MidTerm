@@ -21,6 +21,13 @@ def get_label_descriptors():
             return lst
         return LabelsWithDescriptors.read_list_from_file(f)
 
+
+#TODO implement
+def build_data():
+
+    pass
+
+
 class Experiment:
 
     def __init__(self, labelDescriptList):
@@ -38,7 +45,7 @@ class Experiment:
 
     # TODO Test & Vectorize
     def run_original(self, X: list[str], Y: list[str]) -> float:
-        self.modelHandler.setLabels(self.originalLabels)
+        self.modelHandler.labels = self.originalLabels
         num_correct = 0
         for (x, y) in zip(X, Y):
             if self.originalLabels[self.modeHandler.predict(x).argmax()] == y:
@@ -49,7 +56,7 @@ class Experiment:
 
     # TODO Test & Vectorize
     def run_descriptor(self, X: list[str], Y: list[str]) -> float:
-        self.modelHandler.setLabels(self.descriporLabels)
+        self.modelHandler.lables = self.descriporLabels
         num_correct = 0
 
         for (x, y) in zip(X, Y):
@@ -68,8 +75,9 @@ class Experiment:
 
 def main():
     exp = Experiment(get_label_descriptors())
-    original_acc = exp.run_original()
-    our_acc = exp.run_descriptor()
+    X,Y = build_data()
+    original_acc = exp.run_original(X,Y)
+    our_acc = exp.run_descriptor(X,Y)
 
     print(f"CLIP base acc: {original_acc}\nOur acc: {our_acc}")
 

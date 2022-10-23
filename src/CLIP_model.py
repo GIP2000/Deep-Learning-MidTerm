@@ -7,31 +7,34 @@ class ClipHandler:
 
     def __init__(self, labels=None):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        model, preprocess = clip.load("ViT-B/32", device=self.device)
-        self.model = model
-        self.preprocess = preprocess
-        self.labels = labels
+        self._model, self._preprocess = clip.load("ViT-B/32", device=self.device)
+        self._labels = labels
 
     def _processImage(self, path:str):
-        return self.preprocess(Image.open(path)).unsqueeze(0).to(self.device)
+        return self._preprocess(Image.open(path)).unsqueeze(0).to(self.device)
 
-    def setLabels(self, labels:list[str]):
-        self.labels = self._tokenize(labels)
+    @property
+    def labels(self):
+        return self._labels
+
+    @labels.setter
+    def labels(self, labels:list[str]):
+        self._labels = self._tokenize(labels)
 
     def _tokenize(self, labels: list[str]):
         return clip.tokenize(labels).to(self.device)
 
     def predict(self, imagePath: str):
-        if self.labels is None:
+        if self._labels is None:
             raise ValueError("Please Set the label values first")
 
         image = self._processImage(imagePath)
 
         with torch.no_grad():
-            image_features = self.model.encode_image(image)
-            text_features = self.model.encode_text(self.labels)
+            image_features = self._model.encode_image(image)
+            text_features = self._model.encode_text(self._labels)
 
-            logits_per_image, logits_per_text = self.model(image, self.labels)
+            logits_per_image, logits_per_text = self._model(image, self._labels)
             probs = logits_per_image.softmax(dim=-1).cpu().numpy()
 
         return probs
@@ -40,5 +43,5 @@ class ClipHandler:
 if __name__ == "__main__":
     print("Starting")
     ch = ClipHandler()
-    ch.setLabels(["a diagram", "a dog", "a cat"])
+    ch.labels = ["a diagram", "a dog", "a cat"]
     print(ch.predict("../data/clip.jpeg"))
