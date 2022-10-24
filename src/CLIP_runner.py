@@ -2,6 +2,7 @@ from CLIP_model import ClipHandler
 from descriptor_test import LabelsWithDescriptors
 from sys import argv
 import numpy as np
+import os
 
 def get_label_descriptors():
     if len(argv) != 3:
@@ -22,10 +23,26 @@ def get_label_descriptors():
         return LabelsWithDescriptors.read_list_from_file(f)
 
 
-#TODO implement
 def build_data():
+    image_folders = os.getcwd() + "/../data/imagenet-object-localization-challenge/ILSVRC/Data/CLS-LOC/train/"
+    skip_count = 0
+    X = []
+    Y = []
+    for (i, (_, _, files)) in enumerate(os.walk(image_folders, topdown=True)):
+        if len(files) <= 0:
+            skip_count += 1
+            continue
 
-    pass
+        # This is a sanity check can be removed for performance in the future
+        assert(i - skip_count >= 0 and i - skip_count <= 1000)
+
+        print(f"starting class: {i - skip_count}")
+
+        for x in files:
+            X.append(x)
+            Y.append(i - skip_count)
+
+    return np.array(X), np.array(Y)
 
 
 class Experiment:
