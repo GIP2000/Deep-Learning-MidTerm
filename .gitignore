@@ -2,4 +2,4 @@
 TensorflowMetal/*
 *.zip
 *.DS_STORE
-
+data/imagenet-object-localization-challenge/*
