@@ -1,9 +1,11 @@
 import openai
 import json
 import pathlib
+import json
 from json import JSONEncoder
 import os
 from sys import argv
+from tqdm import tqdm
 
 openai.api_key = os.getenv("OPEN_AI_API_KEY")
 
@@ -62,8 +64,8 @@ A: There are several useful visual features to tell there is a {category_name} i
 
 
     @staticmethod
-    def read_list_from_file(file_path: str):
-        return json.load(file_path, object_hook=LabelsWithDescriptors.json_decoder)
+    def read_list_from_file(file_path: str, early_stop: None):
+        return json.load(file_path, object_hook=LabelsWithDescriptors.json_decoder)[:early_stop]
 
     @staticmethod
     def json_decoder(obj):
@@ -72,9 +74,9 @@ A: There are several useful visual features to tell there is a {category_name} i
         return obj
 
     @staticmethod
-    def create_descriptors_from_label_file(f):
+    def create_descriptors_from_label_file(f, early_stop=None):
         cats = json.load(f)['cats']
-        return [LabelsWithDescriptors(i,labels) for (i, labels) in enumerate(cats)]
+        return [LabelsWithDescriptors(i,labels) for (i, labels) in tqdm(enumerate(cats[:early_stop]), desc="Reading JSON: ")]
 
     class MyEncoder(JSONEncoder):
         def default(self,o):
@@ -97,7 +99,7 @@ if __name__ == "__main__":
     with open(path) as f:
         if flag == "-g":
             newCats = LabelsWithDescriptors.create_descriptors_from_label_file(f)
-            with open(os.getcwd() + "../data/new_cats.json", "w") as outfile:
+            with open(os.getcwd() + "/../data/new_cats.json", "w+") as outfile:
                 json.dump([x for x in newCats], outfile, cls=LabelsWithDescriptors.MyEncoder)
             exit(0)
 

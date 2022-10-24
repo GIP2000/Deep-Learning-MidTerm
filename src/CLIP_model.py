@@ -7,7 +7,7 @@ class ClipHandler:
 
     def __init__(self, labels=None):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self._model, self._preprocess = clip.load("ViT-B/32", device=self.device)
+        self._model, self._preprocess = clip.load("ViT-L/14@336px", device=self.device)
         self._labels = labels
 
     def _processImage(self, path:str):
