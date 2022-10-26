@@ -18,9 +18,8 @@ def get_label_descriptors(early_stop=None):
     path = os.getcwd() + "/" + pathR
     with open(path) as f:
         if flag == "-g":
-            lst = LabelsWithDescriptors.create_descriptors_from_label_file(f, early_stop)
-            with open(os.getcwd() + "/../data/new_cats.json", "w+") as outfile:
-                json.dump([x for x in lst], outfile, cls=LabelsWithDescriptors.MyEncoder)
+            out_path = os.getcwd() + "/../data/new_cats.json"
+            lst = LabelsWithDescriptors.create_descriptors_from_label_file(f, early_stop, out_path)
             return lst
         return LabelsWithDescriptors.read_list_from_file(f, early_stop)
 

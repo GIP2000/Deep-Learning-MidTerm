@@ -76,14 +76,17 @@ A: There are several useful visual features to tell there is a {category_name} i
         return obj
 
     @staticmethod
-    def create_descriptors_from_label_file(f, early_stop=None):
+    def create_descriptors_from_label_file(f, early_stop=None, save_file=None, skip=0):
         cats = json.load(f)['cats']
         lst = []
-        for (i, [folder,labels]) in tqdm(enumerate(cats[:early_stop]), desc="Reading JSON: ", total=1000 if early_stop is None else early_stop):
+        for (i, [folder,labels]) in tqdm(enumerate(cats[skip:early_stop]), desc="Reading JSON: ", total=1000 if early_stop is None else early_stop):
             if i % 50 == 0 and i != 0:
-                sleep(60)
+                sleep(180)
             lst.append(LabelsWithDescriptors(i,labels, folder))
 
+            if save_file is not None:
+                with open(save_file, "w+") as f:
+                    json.dump(lst, f, cls=LabelsWithDescriptors.MyEncoder)
         return lst
 
     class MyEncoder(JSONEncoder):
@@ -106,9 +109,7 @@ if __name__ == "__main__":
     path = os.getcwd() + "/" + pathR
     with open(path) as f:
         if flag == "-g":
-            newCats = LabelsWithDescriptors.create_descriptors_from_label_file(f,5)
-            with open(os.getcwd() + "/../data/new_cats.json", "w+") as outfile:
-                json.dump([x for x in newCats], outfile, cls=LabelsWithDescriptors.MyEncoder)
+            newCats = LabelsWithDescriptors.create_descriptors_from_label_file(f,5,os.getcwd() + "/../data/new_cats.json")
             exit(0)
 
         lables = LabelsWithDescriptors.read_list_from_file(f,5)
