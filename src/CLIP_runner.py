@@ -63,7 +63,7 @@ class Experiment:
     def run_descriptor(self, X: list[str], Y: list[str]) -> float:
         self.modelHandler.labels = self.descriporLabels
         PHI = self.modelHandler.predict(X)
-        print("prediction complete")
+        print("Prediction Complete Performing Matrix Multiply")
         wrong = np.count_nonzero((PHI @ self.descriptor_matrix).argmax(axis=1) - Y.T)
         return 1 - (float(wrong) / float(len(Y)))
 
