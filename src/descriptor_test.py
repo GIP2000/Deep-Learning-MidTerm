@@ -2,6 +2,7 @@ import openai
 import json
 import pathlib
 import json
+from time import sleep
 from json import JSONEncoder
 import os
 from sys import argv
@@ -14,16 +15,17 @@ class LabelsWithDescriptors:
     CLASS_NAME = "LabelsWithDescriptors"
 
 
-    def __init__(self, index, labels, descriptors=None):
+    def __init__(self, index, labels,folder,descriptors=None):
         self.index = index
         self.labels = labels
+        self.folder = folder
         if descriptors is not None:
             self.descriptors = descriptors
         else:
             self.descriptors = LabelsWithDescriptors._get_parsed_response(self.labels[0])
 
     def __str__(self):
-        return f"#{self.index}: {self.labels} -> {self.descriptors}"
+        return f"#{self.index}, folder{self.folder}: {self.labels} -> {self.descriptors}"
 
     @staticmethod
     def _build_input(category_name: str) -> str:
@@ -70,13 +72,19 @@ A: There are several useful visual features to tell there is a {category_name} i
     @staticmethod
     def json_decoder(obj):
         if "__type__" in obj and obj["__type__"] == LabelsWithDescriptors.CLASS_NAME:
-            return LabelsWithDescriptors(obj['index'], obj["labels"],obj["descriptors"])
+            return LabelsWithDescriptors(obj['index'], obj["labels"], obj["folder"], obj["descriptors"])
         return obj
 
     @staticmethod
     def create_descriptors_from_label_file(f, early_stop=None):
         cats = json.load(f)['cats']
-        return [LabelsWithDescriptors(i,labels) for (i, labels) in tqdm(enumerate(cats[:early_stop]), desc="Reading JSON: ")]
+        lst = []
+        for (i, [folder,labels]) in tqdm(enumerate(cats[:early_stop]), desc="Reading JSON: ", total=1000 if early_stop is None else early_stop):
+            if i % 50 == 0 and i != 0:
+                sleep(60)
+            lst.append(LabelsWithDescriptors(i,labels, folder))
+
+        return lst
 
     class MyEncoder(JSONEncoder):
         def default(self,o):
@@ -98,12 +106,12 @@ if __name__ == "__main__":
     path = os.getcwd() + "/" + pathR
     with open(path) as f:
         if flag == "-g":
-            newCats = LabelsWithDescriptors.create_descriptors_from_label_file(f)
+            newCats = LabelsWithDescriptors.create_descriptors_from_label_file(f,5)
             with open(os.getcwd() + "/../data/new_cats.json", "w+") as outfile:
                 json.dump([x for x in newCats], outfile, cls=LabelsWithDescriptors.MyEncoder)
             exit(0)
 
-        lables = LabelsWithDescriptors.read_list_from_file(f)
+        lables = LabelsWithDescriptors.read_list_from_file(f,5)
         for label in lables:
             print(label)
     exit(0)

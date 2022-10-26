@@ -25,100 +25,86 @@ def get_label_descriptors(early_stop=None):
         return LabelsWithDescriptors.read_list_from_file(f, early_stop)
 
 
-def build_data(early_stop=None):
-    image_folders = os.getcwd() + "/../data/imagenet-object-localization-challenge/ILSVRC/Data/CLS-LOC/train/"
-    skip_count = 0
-    X = []
-    Y = []
-    for (i, (root, dirs, files)) in tqdm(enumerate(os.walk(image_folders, topdown=True)), desc="building_data", total=1000 if early_stop is None else early_stop):
-        if len(files) <= 0 or root == image_folders:
-            skip_count += 1
-            continue
-
-        # This is a sanity check can be removed for performance in the future
-        assert(i - skip_count >= 0 and i - skip_count <= 1000)
-
-        # Allows testing on smaller subset
-        if early_stop is not None and i > early_stop:
-            break
-
-        # print(f"starting class: {i - skip_count}")
-        # print(f"starting class: {i - skip_count}\n root: {root}\ndirs: {dirs}\nfiles:{files}")
-
-        for x in files:
-            if ".DS_Store" in x:
-                continue
-            X.append(root + "/" + x)
-            Y.append(i - skip_count)
-
-    return np.array(X), np.array(Y)
 
 
 class Experiment:
 
     def __init__(self, labelDescriptList):
         self.labelDescriptList = labelDescriptList
+        self.folderIndexMap = {l.folder: l.index for l in labelDescriptList}
         self.originalLabels = np.array([Experiment._make_label_from_class(l.labels[0]) for l in labelDescriptList])
         self.descriporLabels = np.array([ Experiment._combine_label_and_descriptor(l.labels[0], d) for l in labelDescriptList for d in l.descriptors])
-        self.descripLabelMap = {Experiment._combine_label_and_descriptor(l.labels[0], d):l for l in labelDescriptList for d in l.descriptors}
+        self.descriptor_matrix = np.zeros((len(self.descriporLabels), len(self.originalLabels)))
+        offset = 0
+        for (ci,l) in enumerate(labelDescriptList):
+            val = 1/len(l.descriptors)
+            for _ in l.descriptors:
+                self.descriptor_matrix[offset][ci] = val
+                offset += 1
         self.modelHandler = ClipHandler()
 
     @staticmethod
-    def _combine_label_and_descriptor(label: str, descriptor: str) -> str:
+    def _combine_label_and_descriptor(cls: str, descriptor: str) -> str:
         # TODO make the has/is more general maybe use a CKF parse or something along those lines?
-        return f"{label} which (has/is) {descriptor}"
+        return f"{cls} which (has/is) {descriptor}"
 
     @staticmethod
     def _make_label_from_class(cls:str) -> str:
-        return f"a {cls}"
+        return f"a photo of a {cls}"
 
 
     # TODO Test & Vectorize
     def run_original(self, X: list[str], Y: list[str]) -> float:
         self.modelHandler.labels = self.originalLabels
-        num_correct = 0
-        pbar = tqdm(enumerate(zip(X, Y)), total=len(X))
-        for (i,(x, y)) in pbar:
-            if self.modelHandler.predict(x).argmax() == y:
-                num_correct += 1
-            pbar.set_description(f"original acc: {float(num_correct) / float(i+1)}")
-
-        return float(num_correct) / float(len(X))
+        wrong = np.count_nonzero(self.modelHandler.predict(X).argmax(axis=1) - Y.T)
+        return 1 - (float(wrong) / float(len(X)))
 
 
     # TODO Test & Vectorize
     def run_descriptor(self, X: list[str], Y: list[str]) -> float:
-        self.modelHandler.lables = self.descriporLabels
-        num_correct = 0
-        pbar = tqdm(enumerate(zip(X, Y), desc="Our Predictions: ", total=len(X)))
-        for (i, (x, y)) in pbar:
-            label_prob = np.zeros(len(self.originalLabels));
-            PHI = self.modelHandler.predict(x)
-            for (phi, dl) in zip(PHI, self.descriporLabels):
-                label_prob[self.descripLabelMap[dl].index] += phi
+        self.modelHandler.labels = self.descriporLabels
+        PHI = self.modelHandler.predict(X)
+        wrong = np.count_nonzero((PHI @ self.descriptor_matrix).argmax(axis=1) - Y.T)
+        return 1 - (float(wrong) / float(len(Y)))
 
-            for (lp,l) in zip(label_prob,self.labelDescriptList):
-                lp /= len(l.descriptors)
-            if label_prob.argmax() == y:
-                num_correct += 1
 
-            pbar.set_description(f"Our Acc: {float(num_correct) / float(i+1)}")
+def build_data(exp: Experiment, early_stop=None, img_per_class=1):
+    test_folder = os.getcwd() + "/../data/imagenet-object-localization-challenge/ILSVRC/Data/CLS-LOC/train/"
+    skip_count = 0
+    early_stop = 1000 if early_stop is None else early_stop
+    X = []
+    Y = []
+    counter = 0
+    for ld in tqdm(exp.labelDescriptList, desc="building_data", total=early_stop):
+        folder_name = ld.folder
+        x_l = os.listdir(test_folder + folder_name)[0:img_per_class]
 
-        return float(num_correct) / float(len(Y))
+        for x in x_l:
+            X.append(test_folder + folder_name + "/" + x)
+            Y.append(ld.index)
+
+        if counter >= early_stop:
+            break
+        counter+=1
+
+    assert(len(X) / img_per_class == early_stop)
+
+    return np.array(X), np.array(Y)
 
 
 def main():
-    early_stop = 5
-    exp = Experiment(get_label_descriptors(early_stop))
-    X,Y = build_data(early_stop)
+    early_stop = None # so I can test it without running it on all of ImageNet
 
+    exp = Experiment(get_label_descriptors(early_stop))
     # Sanity check
-    assert(len(np.unique(Y)) == early_stop)
+    assert(len(exp.labelDescriptList) ==1000 if early_stop is None else early_stop)
+
+    X,Y = build_data(exp, early_stop)
+    # Sanity check
+    assert(len(np.unique(Y)) == 1000 if early_stop is None else early_stop)
 
     original_acc = exp.run_original(X,Y)
-
-    # our_acc = exp.run_descriptor(X,Y)
-    our_acc = 0
+    our_acc = exp.run_descriptor(X,Y)
 
     print(f"CLIP base acc: {original_acc}\nOur acc: {our_acc}")
 
