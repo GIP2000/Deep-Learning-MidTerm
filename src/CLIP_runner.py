@@ -63,6 +63,7 @@ class Experiment:
     def run_descriptor(self, X: list[str], Y: list[str]) -> float:
         self.modelHandler.labels = self.descriporLabels
         PHI = self.modelHandler.predict(X)
+        print("prediction complete")
         wrong = np.count_nonzero((PHI @ self.descriptor_matrix).argmax(axis=1) - Y.T)
         return 1 - (float(wrong) / float(len(Y)))
 
@@ -102,7 +103,9 @@ def main():
     # Sanity check
     assert(len(np.unique(Y)) == 1000 if early_stop is None else early_stop)
 
+    print("starting baseline CLIP model")
     original_acc = exp.run_original(X,Y)
+    print("starting our test")
     our_acc = exp.run_descriptor(X,Y)
 
     print(f"CLIP base acc: {original_acc}\nOur acc: {our_acc}")
