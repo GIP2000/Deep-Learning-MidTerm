@@ -81,7 +81,7 @@ A: There are several useful visual features to tell there is a {category_name} i
         lst = []
         for (i, [folder,labels]) in tqdm(enumerate(cats[skip:early_stop]), desc="Reading JSON: ", total=1000 if early_stop is None else early_stop):
             if i % 50 == 0 and i != 0:
-                sleep(180)
+                sleep(240)
             lst.append(LabelsWithDescriptors(i,labels, folder))
 
             if save_file is not None:
