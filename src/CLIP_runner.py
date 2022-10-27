@@ -74,11 +74,17 @@ class Experiment:
 
 
     def run_descriptorP(self, X, Y: np.ndarray ) -> float:
+        # self.modelHandler.labels = self.descriporLabels
+        # PHI = self.modelHandler.predictImages(X)
+        # print("Prediction Complete Performing Matrix Multiply")
+        wrong = np.count_nonzero(self.get_predictionsP(X)[0] - Y.T)
+        return 1 - (float(wrong) / float(len(Y)))
+
+    def get_predictionsP(self, X) -> np.ndarray:
         self.modelHandler.labels = self.descriporLabels
         PHI = self.modelHandler.predictImages(X)
-        print("Prediction Complete Performing Matrix Multiply")
-        wrong = np.count_nonzero((PHI @ self.descriptor_matrix).argmax(axis=1) - Y.T)
-        return 1 - (float(wrong) / float(len(Y)))
+        return (PHI @ self.descriptor_matrix).argmax(axis=1), PHI
+
 
 
 def build_data(exp: Experiment, img_count=None):
