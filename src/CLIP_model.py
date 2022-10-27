@@ -14,6 +14,9 @@ class ClipHandler:
     def _processImage(self, path:str):
         return self._preprocess(Image.open(path)).unsqueeze(0).to(self.device)
 
+    def _processImageP(self, img):
+        return self._preprocess(img).unsqueeze(0).to(self.device)
+
     @property
     def labels(self):
         return self._labels
@@ -38,6 +41,20 @@ class ClipHandler:
             probs = logits_per_image.softmax(dim=-1).cpu().numpy()
 
         return probs
+
+    def predictImages(self, X):
+        if self._labels is None:
+            raise ValueError("Please Set the label values first")
+
+        images = torch.tensor(np.concatenate([self._processImageP(i) for i in X]), device=self.device)
+
+        with torch.no_grad():
+
+            logits_per_image, logits_per_text = self._model(images, self._labels)
+            probs = logits_per_image.softmax(dim=-1).cpu().numpy()
+
+        return probs
+
 
 
 # Theses are the tests
