@@ -60,9 +60,14 @@ class Experiment:
         return 1 - (float(wrong) / float(len(X)))
 
     def run_originalP(self, X,  Y: np.ndarray ) -> float:
-        self.modelHandler.labels = self.originalLabels
-        wrong = np.count_nonzero(self.modelHandler.predictImages(X).argmax(axis=1) - Y.T)
+        # self.modelHandler.labels = self.originalLabels
+        wrong = np.count_nonzero(self.get_predictionsOP(X)[0] - Y.T)
         return 1 - (float(wrong) / float(len(X)))
+
+    def get_predictionsOP(self, X) -> np.ndarray:
+        self.modelHandler.labels = self.originalLabels
+        PHI = self.modelHandler.predictImages(X)
+        return PHI.argmax(axis=1), PHI
 
     # TODO Test & Vectorize
     def run_descriptor(self, X: list[str], Y: np.ndarray ) -> float:
@@ -77,10 +82,10 @@ class Experiment:
         # self.modelHandler.labels = self.descriporLabels
         # PHI = self.modelHandler.predictImages(X)
         # print("Prediction Complete Performing Matrix Multiply")
-        wrong = np.count_nonzero(self.get_predictionsP(X)[0] - Y.T)
+        wrong = np.count_nonzero(self.get_predictionsDP(X)[0] - Y.T)
         return 1 - (float(wrong) / float(len(Y)))
 
-    def get_predictionsP(self, X) -> np.ndarray:
+    def get_predictionsDP(self, X) -> np.ndarray:
         self.modelHandler.labels = self.descriporLabels
         PHI = self.modelHandler.predictImages(X)
         return (PHI @ self.descriptor_matrix).argmax(axis=1), PHI
