@@ -1,5 +1,5 @@
 from CLIP_model import ClipHandler
-from descriptor_test import LabelsWithDescriptors
+from descriptor_generater import LabelsWithDescriptors
 from datasets import load_dataset
 import os
 from sys import argv
@@ -107,7 +107,7 @@ def build_data(exp: Experiment, img_count=None):
 
 def main():
     early_stop = None # so I can test it without running it on all of ImageNet
-    img_count = 1000
+    img_count = 5000
 
     exp = Experiment(get_label_descriptors(early_stop))
     # Sanity check
